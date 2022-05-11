@@ -78,16 +78,16 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
 	// SHOW DRAWING
-	if (penDown) {
-		ofClear(255, 235, 235, 255);
-	}
-	else {
+	/*if (penDown) {
 		ofClear(255, 255, 255, 255);
 	}
+	else {*/
+		ofClear(255, 255, 255, 255);
+	//}
 	fbo.draw(0, 0);
 
 	// SHOW Mouse Position
-	ofSetColor(0, 0, 0, 255);
+	ofSetColor(0, 0, 0, 100);
 	ofSetLineWidth(1);
 	ofDrawLine(0, penY, appWidth, penY);
 	ofDrawLine(penX, 0, penX, appHeight);
