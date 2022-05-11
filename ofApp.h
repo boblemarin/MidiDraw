@@ -28,6 +28,10 @@ class ofApp : public ofBaseApp{
 		int strokeWidth;
 		ofFbo fbo;
 		bool penDown;
+		bool shouldFade;
+		bool shouldDraw;
+		int cursorSize;
+
 
 		ofxMidiOut midiOut;
 		int midiChannel;

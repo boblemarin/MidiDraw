@@ -17,7 +17,9 @@ void ofApp::setup() {
 	penX = 0;
 	penY = 0;
 	penDown = false;
+	shouldFade = false;
 	strokeWidth = 3;
+	cursorSize = 150;
 	settingsMode = SettingsMode::none;
 	outputMode = OutputMode::noteBendMod;
 
@@ -77,22 +79,46 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	// SHOW DRAWING
-	/*if (penDown) {
-		ofClear(255, 255, 255, 255);
+	// DRAW ?
+	fbo.begin();
+	ofEnableSmoothing();
+	if (penDown) {
+		if (lastPenX != penX || lastPenY != penY) {
+			ofSetColor(0, 0, 0, 255);
+			ofFill();
+			ofSetLineWidth(strokeWidth);
+			ofDrawLine(lastPenX, lastPenY, penX, penY);
+			ofDrawCircle(penX, penY, floor(strokeWidth / 2 - 1));
+			lastPenX = penX;
+			lastPenY = penY;
+		}
+		else {
+			ofSetColor(0, 0, 0, 255);
+			ofFill();
+			ofDrawCircle(penX, penY, floor(strokeWidth / 2));
+		}
 	}
-	else {*/
-		ofClear(255, 255, 255, 255);
-	//}
+	// APPLY FADE ?
+	if (shouldFade) {
+		ofSetColor(255, 255, 255, 3);
+		ofFill();
+		ofDrawRectangle(0, 0, appWidth, appHeight);
+		shouldFade = false;
+	}
+	fbo.end();
+	// SHOW FBO DRAWING
+	ofClear(255, 255, 255, 255);
+	ofSetColor(255, 255, 255, 255);
 	fbo.draw(0, 0);
 
 	// SHOW Mouse Position
-	int penSize = 150;
-	ofSetColor(0, 0, 0, 100);
+	if (penDown)
+		ofSetColor(0, 0, 0, 255);
+	else
+		ofSetColor(200, 200, 200, 255);
 	ofSetLineWidth(1);
-	ofDrawLine(penX - penSize, penY, penX + penSize, penY);
-	ofDrawLine(penX, penY - penSize, penX, penY + penSize);
-
+	ofDrawLine(penX - cursorSize, penY, penX + cursorSize, penY);
+	ofDrawLine(penX, penY - cursorSize, penX, penY + cursorSize);
 
 	//ndiSender.SendImage(fbo);
 
@@ -273,12 +299,7 @@ W,X,C       SEND MIDI VALUES FOR MAPPING");
 	}
 	else if (key == OF_KEY_UP || key == OF_KEY_DOWN)
 	{
-	notify("> FADING");
-		fbo.begin();
-		ofSetColor(255, 255, 255, 20);
-		ofFill();
-		ofDrawRectangle(0, 0, appWidth, appHeight);
-		fbo.end();
+		shouldFade = true;
 	//} else {
 		//ofLog(OF_LOG_NOTICE, "key %d", key);
 	}
@@ -317,17 +338,11 @@ void ofApp::mouseMoved(int x, int y ){
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-	fbo.begin();
+	/*fbo.begin();
 	//ofLog(OF_LOG_NOTICE, "button %d", button);
-	notify("> BTTON : " + std::to_string(button));
+	//notify("> BTTON : " + std::to_string(button));
 	if (button > 0) {
-		// right button, try to erase
-		/*ofSetColor(0, 0, 0, 0);
-		//ofSetLineWidth(40);
-		//ofCircle(x, y, 20);
-		ofFill();
-		ofDrawCircle(x, y, 40);*/
-		// left button, draw
+
 		ofSetColor(255, 255, 255, 255);
 		ofFill();
 		ofSetLineWidth(strokeWidth*4);
@@ -343,6 +358,7 @@ void ofApp::mouseDragged(int x, int y, int button){
 		ofDrawCircle(penX, penY, floor(strokeWidth / 2 - 1));
 	}
 	fbo.end();
+	*/
 	penX = x;
 	penY = y;
 
@@ -376,8 +392,10 @@ void ofApp::mousePressed(int x, int y, int button){
 	penY = y;
 	startX = x;
 	startY = y;
+	lastPenX = x;
+	lastPenY = y;
 	penDown = true;
-	/**/
+	/*
 	fbo.begin();
 	ofFill();
 	if (button > 0) {
@@ -391,7 +409,7 @@ void ofApp::mousePressed(int x, int y, int button){
 		ofDrawCircle(penX, penY, floor(strokeWidth / 2));
 	}
 	fbo.end();
-
+*/
 
 	switch (outputMode)
 	{
