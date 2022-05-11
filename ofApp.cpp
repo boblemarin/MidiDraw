@@ -87,10 +87,11 @@ void ofApp::draw(){
 	fbo.draw(0, 0);
 
 	// SHOW Mouse Position
+	int penSize = 150;
 	ofSetColor(0, 0, 0, 100);
 	ofSetLineWidth(1);
-	ofDrawLine(0, penY, appWidth, penY);
-	ofDrawLine(penX, 0, penX, appHeight);
+	ofDrawLine(penX - penSize, penY, penX + penSize, penY);
+	ofDrawLine(penX, penY - penSize, penX, penY + penSize);
 
 
 	//ndiSender.SendImage(fbo);
@@ -252,23 +253,32 @@ W,X,C       SEND MIDI VALUES FOR MAPPING");
 	}
 	}
 	else if (key == 'x') { // X
-	switch (outputMode)
-	{
-	case OutputMode::noteBendMod:
-		midiOut.sendPitchBend(midiChannel, 8192);
-		notify("> SENDING PITCH BEND");
-		break;
-	case OutputMode::CCs:
-		midiOut.sendControlChange(midiChannel, 15, 1);
-		notify("> SENDING CC 15");
-		break;
-		break;
-	case OutputMode::NoteGrid:
+		switch (outputMode)
+		{
+		case OutputMode::noteBendMod:
+			midiOut.sendPitchBend(midiChannel, 8192);
+			notify("> SENDING PITCH BEND");
+			break;
+		case OutputMode::CCs:
+			midiOut.sendControlChange(midiChannel, 15, 1);
+			notify("> SENDING CC 15");
+			break;
+			break;
+		case OutputMode::NoteGrid:
 
-		break;
-	default:
-		break;
+			break;
+		default:
+			break;
+		}
 	}
+	else if (key == OF_KEY_UP || key == OF_KEY_DOWN)
+	{
+	notify("> FADING");
+		fbo.begin();
+		ofSetColor(255, 255, 255, 20);
+		ofFill();
+		ofDrawRectangle(0, 0, appWidth, appHeight);
+		fbo.end();
 	//} else {
 		//ofLog(OF_LOG_NOTICE, "key %d", key);
 	}
