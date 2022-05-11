@@ -154,9 +154,9 @@ void ofApp::keyPressed(int key){
 		fbo.end();
 
 		// reset canvas
-		fbo.begin();
-		ofClear(255, 255, 255, 0);
-		fbo.end();
+		//fbo.begin();
+		//ofClear(255, 255, 255, 0);
+		//fbo.end();
 
 		settingsMode = SettingsMode::none;
 		notify(("> IMAGE SAVED"));
