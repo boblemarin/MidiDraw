@@ -6,7 +6,7 @@
 
 bool const DEBUG = false;
 
-enum SettingsMode { none, outputPort, channel, outputType };
+enum class SettingsMode : unsigned int { none, outputPort, channel, outputType };
 enum OutputMode { noteBendMod, CCs, NoteGrid };
 const std::string OutputModeNames[] =
 {
@@ -17,6 +17,8 @@ const std::string OutputModeNames[] =
 
 class ofApp : public ofBaseApp{
 	private:	
+		unsigned int appWidth;
+		unsigned int appHeight;
 		int penX;
 		int penY;
 		int lastPenX;
@@ -40,6 +42,7 @@ class ofApp : public ofBaseApp{
 		int notificationCounter;
 		int notificationDuration;
 		SettingsMode settingsMode;
+
 		/*
 		ofxNDIsender ndiSender;    // NDI sender
 		char senderName[256];      // Sender name

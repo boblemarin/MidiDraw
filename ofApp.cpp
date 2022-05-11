@@ -18,8 +18,8 @@ void ofApp::setup() {
 	penY = 0;
 	penDown = false;
 	strokeWidth = 3;
-	settingsMode = none;
-	outputMode = noteBendMod;
+	settingsMode = SettingsMode::none;
+	outputMode = OutputMode::noteBendMod;
 
 	// init notifications
 	notificationDuration = 200;
@@ -28,16 +28,15 @@ void ofApp::setup() {
 
 	// FBO
 	if (DEBUG) {
-		fbo.allocate(960, 540, GL_RGBA);
-		//senderWidth = 960;
-		//senderHeight = 540;
+		appWidth = 960;
+		appHeight = 540;
 	}
 	else {
-		fbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
-		//senderWidth = ofGetWidth();
-		//senderHeight = ofGetHeight();
+		appWidth = ofGetWidth();
+		appHeight = ofGetHeight();
 	}
 	//
+	fbo.allocate(appWidth, appHeight, GL_RGBA);
 	fbo.begin();
 	ofClear(255, 255, 255, 0);
 	fbo.end();
@@ -54,9 +53,10 @@ void ofApp::setup() {
 	ofSetWindowTitle(senderName); // show it on the title bar
 	ndiSender.SetReadback();
 	ndiSender.SetAsync();
-	ndiSender.CreateSender(senderName, senderWidth, senderHeight);
+	ndiSender.CreateSender(senderName, appWidth, appHeight);
 	*/
 	ofSetWindowTitle("NOISE PROJECT");
+	ofHideCursor();
 }
 /*
 void ofApp::exit() {
@@ -70,13 +70,14 @@ void ofApp::update(){
 	if (notificationVisible) {
 		if (--notificationCounter < 0) {
 			notificationVisible = false;
-			settingsMode = none;
+			settingsMode = SettingsMode::none;
 		}
 	}
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
+	// SHOW DRAWING
 	if (penDown) {
 		ofClear(255, 235, 235, 255);
 	}
@@ -84,6 +85,13 @@ void ofApp::draw(){
 		ofClear(255, 255, 255, 255);
 	}
 	fbo.draw(0, 0);
+
+	// SHOW Mouse Position
+	ofSetColor(0, 0, 0, 255);
+	ofSetLineWidth(1);
+	ofDrawLine(0, penY, appWidth, penY);
+	ofDrawLine(penX, 0, penX, appHeight);
+
 
 	//ndiSender.SendImage(fbo);
 
@@ -123,11 +131,11 @@ void ofApp::keyPressed(int key){
 		ofClear(255, 255, 255, 0);
 		fbo.end();
 
-		settingsMode = none;
+		settingsMode = SettingsMode::none;
 		notify(("> IMAGE SAVED"));
 	}
 	else if (key > 48 && key < 53) { // stroke width selector (numpad 1>4)
-		settingsMode = none;
+		settingsMode = SettingsMode::none;
 		strokeWidth = (key - 48) * 3;
 		notify(("> STROKE WIDTH : " + std::to_string(strokeWidth)));
 		sendControlChange(midiChannel, 100, (key - 49)*42);
@@ -145,9 +153,10 @@ F3  SELECT MIDI CHANNEL\n\
 F4  SELECT OUTPUT TYPE\n\n\
 BACKSPACE   CLEAR SCREEN\n\
 ENTER       SAVE IMAGE AND CLEAR SCREEN\n\n\
-NUMPAD 1-4  CHANGE STROKE SIZE");
+NUMPAD 1-4  CHANGE STROKE SIZE\n\n\
+W,X,C       SEND MIDI VALUES FOR MAPPING");
 	} else if (key == OF_KEY_F2) { // F2
-		if (settingsMode == outputPort) {
+		if (settingsMode == SettingsMode::outputPort) {
 			midiOut.closePort();
 			midiOutput = ++midiOutput % midiOut.getNumOutPorts();
 			midiOut.openPort(midiOutput);
@@ -155,39 +164,39 @@ NUMPAD 1-4  CHANGE STROKE SIZE");
 			
 		}
 		else {
-			settingsMode = outputPort;
+			settingsMode = SettingsMode::outputPort;
 			notify(("> CURRENT OUTPUT : ") + midiOut.getOutPortName(midiOutput));
 		}
 	}
 	else if (key == OF_KEY_F3) { // F3
-		if (settingsMode == channel) {
+		if (settingsMode == SettingsMode::channel) {
 			if (++midiChannel > 16) midiChannel = 1;
 			notify("> MIDI CHANNEL : " + std::to_string(midiChannel));
 		}
 		else {
-			settingsMode = channel;
+			settingsMode = SettingsMode::channel;
 			notify("> MIDI CHANNEL : " + std::to_string(midiChannel));
 		}
 	}
 	else if (key == OF_KEY_F4) { // F4
-		if (settingsMode == outputType) {
+		if (settingsMode == SettingsMode::outputType) {
 			switch (outputMode)
 			{
-			case noteBendMod:
+			case OutputMode::noteBendMod:
 				if (currentNote < 0) {
 					midiOut.sendNoteOff(midiChannel, currentNote, 100);
 					currentNote = -1;
 				}
-				outputMode = CCs;
+				outputMode = OutputMode::CCs;
 				break;
-			case CCs:
+			case OutputMode::CCs:
 				if (penDown < 0) {
 					midiOut.sendNoteOff(midiChannel, 56, 100);
 				}
-				outputMode = NoteGrid;
+				outputMode = OutputMode::NoteGrid;
 				break;
-			case NoteGrid:
-				outputMode = noteBendMod;
+			case OutputMode::NoteGrid:
+				outputMode = OutputMode::noteBendMod;
 				if (currentNote < 0) {
 					midiOut.sendNoteOff(midiChannel, currentNote, 100);
 					currentNote = -1;
@@ -198,7 +207,7 @@ NUMPAD 1-4  CHANGE STROKE SIZE");
 			}
 		}
 		else {
-			settingsMode = outputType;
+			settingsMode = SettingsMode::outputType;
 		}
 
 		notify("> OUTPUT TYPE : " + OutputModeNames[outputMode]);
@@ -227,16 +236,16 @@ NUMPAD 1-4  CHANGE STROKE SIZE");
 	else if (key == 'w') { // W
 	switch (outputMode)
 	{
-	case noteBendMod:
+	case OutputMode::noteBendMod:
 		midiOut.sendControlChange(midiChannel, 1, 1);
 		notify("> SENDING CC 1 (MOD)");
 		break;
-	case CCs:
+	case OutputMode::CCs:
 		midiOut.sendControlChange(midiChannel, 14, 1);
 		notify("> SENDING CC 14");
 		break;
 		break;
-	case NoteGrid:
+	case OutputMode::NoteGrid:
 		break;
 	default:
 		break;
@@ -245,16 +254,16 @@ NUMPAD 1-4  CHANGE STROKE SIZE");
 	else if (key == 'x') { // X
 	switch (outputMode)
 	{
-	case noteBendMod:
+	case OutputMode::noteBendMod:
 		midiOut.sendPitchBend(midiChannel, 8192);
 		notify("> SENDING PITCH BEND");
 		break;
-	case CCs:
+	case OutputMode::CCs:
 		midiOut.sendControlChange(midiChannel, 15, 1);
 		notify("> SENDING CC 15");
 		break;
 		break;
-	case NoteGrid:
+	case OutputMode::NoteGrid:
 
 		break;
 	default:
@@ -310,6 +319,7 @@ void ofApp::mouseDragged(int x, int y, int button){
 		ofDrawCircle(x, y, 40);*/
 		// left button, draw
 		ofSetColor(255, 255, 255, 255);
+		ofFill();
 		ofSetLineWidth(strokeWidth*4);
 		ofDrawLine(penX, penY, x, y);
 		ofDrawCircle(penX, penY, floor(strokeWidth / 2 - 1)*4);
@@ -317,6 +327,7 @@ void ofApp::mouseDragged(int x, int y, int button){
 	else {
 		// left button, draw
 		ofSetColor(0, 0, 0, 255);
+		ofFill();
 		ofSetLineWidth(strokeWidth);
 		ofDrawLine(penX, penY, x, y);
 		ofDrawCircle(penX, penY, floor(strokeWidth / 2 - 1));
@@ -328,18 +339,18 @@ void ofApp::mouseDragged(int x, int y, int button){
 
 	switch (outputMode)
 	{
-	case noteBendMod:
+	case OutputMode::noteBendMod:
 		// send vertical position offset as pitch bend
 		sendPitchBend(midiChannel, 8192 + ofClamp((startY - penY) * 8, -8192, 8191));
 		// send horizontal position as mod wheel value
-		sendControlChange(midiChannel, 1, ofMap(penX, 0, ofGetWidth(), 0, 127, true));
+		sendControlChange(midiChannel, 1, ofMap(penX, 0, appWidth, 0, 127, true));
 		break;
 
-	case CCs:
+	case OutputMode::CCs:
 		// send horizontal position as CC14
-		sendControlChange(midiChannel, 14, ofMap(penX, 0, ofGetWidth(), 0, 127, true));
+		sendControlChange(midiChannel, 14, ofMap(penX, 0, appWidth, 0, 127, true));
 		// send horizontal position as CC15
-		sendControlChange(midiChannel, 15, ofMap(ofGetHeight() - penY, 0, ofGetHeight(), 0, 127, true));
+		sendControlChange(midiChannel, 15, ofMap(appHeight - penY, 0, appHeight, 0, 127, true));
 		break;
 	default:
 		break;
@@ -361,10 +372,12 @@ void ofApp::mousePressed(int x, int y, int button){
 	ofFill();
 	if (button > 0) {
 		ofSetColor(255, 255, 255, 255);
+		ofFill();
 		ofDrawCircle(penX, penY, floor(strokeWidth / 2)*4);
 	}
 	else {
 		ofSetColor(0, 0, 0, 255);
+		ofFill();
 		ofDrawCircle(penX, penY, floor(strokeWidth / 2));
 	}
 	fbo.end();
@@ -372,17 +385,17 @@ void ofApp::mousePressed(int x, int y, int button){
 
 	switch (outputMode)
 	{
-	case noteBendMod:
-		currentNote = ofMap(y, 0, ofGetHeight(), 96, 24);
+	case OutputMode::noteBendMod:
+		currentNote = ofMap(y, 0, appHeight, 96, 24);
 		sendPitchBend(midiChannel, 8192);
-		sendControlChange(midiChannel, 1, ofMap(penX, 0, ofGetWidth(), 0, 127, true));
+		sendControlChange(midiChannel, 1, ofMap(penX, 0, appWidth, 0, 127, true));
 		midiOut.sendNoteOn(midiChannel, currentNote, 100);
 		break;
 
-	case CCs:
+	case OutputMode::CCs:
 		midiOut.sendNoteOn(midiChannel, 56, 127);
-		sendControlChange(midiChannel, 14, ofMap(penX, 0, ofGetWidth(), 0, 127, true));
-		sendControlChange(midiChannel, 15, ofMap(ofGetHeight() - penY, 0, ofGetHeight(), 0, 127, true));
+		sendControlChange(midiChannel, 14, ofMap(penX, 0, appWidth, 0, 127, true));
+		sendControlChange(midiChannel, 15, ofMap(appHeight - penY, 0, appHeight, 0, 127, true));
 		break;
 	default:
 		break;
@@ -396,12 +409,12 @@ void ofApp::mouseReleased(int x, int y, int button){
 	penDown = false;
 	switch (outputMode)
 	{
-	case noteBendMod:
+	case OutputMode::noteBendMod:
 		midiOut.sendNoteOff(midiChannel, currentNote, 100);
 		currentNote = -1;
 		break;
 
-	case CCs:
+	case OutputMode::CCs:
 		midiOut.sendNoteOff(midiChannel, 56, 100);
 		break;
 	default:
